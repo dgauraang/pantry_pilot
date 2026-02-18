@@ -9,9 +9,12 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=sqlite:/data/pantrypilot.db
-      - LLM_BASE_URL=https://router.huggingface.co/v1
-      - LLM_MODEL=deepseek-ai/DeepSeek-R1:fastest
+      - LLM_BASE_URL=https://openrouter.ai/api/v1
+      - LLM_MODEL=openrouter/free
       - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_FALLBACK_MODELS=${LLM_FALLBACK_MODELS:-openai/gpt-oss-20b:free,mistralai/mistral-small-3.1-24b-instruct:free,qwen/qwen3-coder:free}
+      - LLM_HTTP_REFERER=${LLM_HTTP_REFERER:-http://localhost:3000}
+      - LLM_X_TITLE=${LLM_X_TITLE:-PantryPilot}
       - CHOKIDAR_USEPOLLING=true
     command: sh -c "apt-get update && apt-get install -y openssl && npm install && ./scripts/start.sh dev"
     ports:
@@ -27,9 +30,12 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=sqlite:/data/pantrypilot.db
-      - LLM_BASE_URL=${LLM_BASE_URL:-https://router.huggingface.co/v1}
-      - LLM_MODEL=${LLM_MODEL:-deepseek-ai/DeepSeek-R1:fastest}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      - LLM_MODEL=${LLM_MODEL:-openrouter/free}
       - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_FALLBACK_MODELS=${LLM_FALLBACK_MODELS:-openai/gpt-oss-20b:free,mistralai/mistral-small-3.1-24b-instruct:free,qwen/qwen3-coder:free}
+      - LLM_HTTP_REFERER=${LLM_HTTP_REFERER:-http://localhost:3000}
+      - LLM_X_TITLE=${LLM_X_TITLE:-PantryPilot}
     ports:
       - "3000:3000"
 
@@ -58,9 +64,12 @@ services:
     environment:
       - NODE_ENV=test
       - DATABASE_URL=sqlite:/data/pantrypilot.db
-      - LLM_BASE_URL=https://router.huggingface.co/v1
-      - LLM_MODEL=deepseek-ai/DeepSeek-R1:fastest
+      - LLM_BASE_URL=https://openrouter.ai/api/v1
+      - LLM_MODEL=openrouter/free
       - LLM_API_KEY=dummy-for-e2e
+      - LLM_FALLBACK_MODELS=openai/gpt-oss-20b:free,mistralai/mistral-small-3.1-24b-instruct:free,qwen/qwen3-coder:free
+      - LLM_HTTP_REFERER=http://localhost:3000
+      - LLM_X_TITLE=PantryPilot E2E
       - CHOKIDAR_USEPOLLING=true
     command: sh -c "npm install && npm run db:prepare:dev && npm run test:e2e"
 

@@ -2,13 +2,13 @@
 
 ## Quickstart (Docker)
 
-### 1) Create a Hugging Face token
-1. Go to https://huggingface.co/settings/tokens.
-2. Create a token with inference permission.
+### 1) Create an OpenRouter API key
+1. Go to https://openrouter.ai/settings/keys.
+2. Create an API key.
 3. Export it in your shell:
 
 ```bash
-export LLM_API_KEY="hf_your_token_here"
+export LLM_API_KEY="sk-or-v1_your_key_here"
 ```
 
 ### 2) Run development (primary workflow)
@@ -39,10 +39,32 @@ docker compose run --rm e2e
 
 ## Environment variables
 
-- `LLM_API_KEY` (required): Hugging Face token for Inference Providers.
-- `LLM_BASE_URL` (default: `https://router.huggingface.co/v1`): OpenAI-compatible base URL.
-- `LLM_MODEL` (default: `deepseek-ai/DeepSeek-R1:fastest`): model name routed by HF.
+- `LLM_API_KEY` (required): OpenRouter API key.
+- `LLM_BASE_URL` (default: `https://openrouter.ai/api/v1`): OpenAI-compatible base URL.
+- `LLM_MODEL` (default: `openrouter/free`): model name routed by OpenRouter.
+- `LLM_FALLBACK_MODELS` (optional): comma-separated fallback models used when the primary model is rate-limited/unavailable.
+- `LLM_HTTP_REFERER` (optional): your app/site URL for OpenRouter attribution.
+- `LLM_X_TITLE` (optional): app name for OpenRouter attribution.
 - `DATABASE_URL` (default: `sqlite:/data/pantrypilot.db`): persisted SQLite path.
+
+## Receipt image import
+
+- Supported upload formats: `.jpg`, `.jpeg`, `.png`, `.webp`
+- Single file per request (`multipart/form-data`, field name: `file`)
+- Max upload size: `8MB`
+- PDF receipts are intentionally not supported
+
+Pipeline:
+
+1. `POST /api/receipts` stores the image in `data/uploads/receipts/`, runs OCR, and parses line items.
+2. If OCR confidence is low, the server falls back to LLM-based structured extraction.
+3. UI shows editable parsed rows; low-confidence rows require explicit confirmation before apply.
+4. `POST /api/receipts/:id/apply` merges rows into pantry quantities using normalized ingredient names + compatible units.
+
+OCR dependency:
+
+- Install `tesseract.js` (already included in `package.json`) and ensure runtime can execute OCR workers.
+- If OCR is unavailable at runtime, the API falls back to LLM extraction when possible.
 
 ## Swap providers
 
@@ -53,10 +75,10 @@ Use any OpenAI-compatible provider by changing:
 
 Keep the same `LLM_API_KEY` variable name and set its value to the provider key.
 
-## HF Router connectivity check
+## OpenRouter connectivity check
 
 ```bash
-curl https://router.huggingface.co/v1/models \
+curl https://openrouter.ai/api/v1/models \
   -H "Authorization: Bearer $LLM_API_KEY"
 ```
 
@@ -65,9 +87,9 @@ curl https://router.huggingface.co/v1/models \
 - `npm run dev`
 - `npm run build`
 - `npm run start`
+- `npm run lint`
 - `npm run test`
 - `npm run test:e2e`
-- `npm run lint`
 
 ## Prisma startup behavior in Docker
 

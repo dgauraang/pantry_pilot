@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { listRecipes, saveRecipe } from "@/lib/db/recipes";
+import { findDuplicateRecipe, listRecipes, saveRecipe } from "@/lib/db/recipes";
 
 const saveRecipeSchema = z.object({
   title: z.string().trim().min(1),
@@ -21,6 +21,17 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const duplicate = await findDuplicateRecipe(parsed.data);
+  if (duplicate) {
+    return NextResponse.json(
+      {
+        error: "Duplicate recipe already exists.",
+        duplicateRecipe: duplicate
+      },
+      { status: 409 }
+    );
   }
 
   const recipe = await saveRecipe(parsed.data);

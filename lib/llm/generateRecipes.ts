@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 import { buildRecipePromptContext, type GenerateRecipeRequest, type PantryForPrompt } from "@/lib/domain/recipes";
-import { getLlmClient, getLlmModel } from "@/lib/llm/client";
-import { parseAndValidateRecipesJson, type RecipeCandidate } from "@/lib/llm/schema";
+import { createChatCompletionWithFallback, getLlmClient } from "@/lib/llm/client";
+import { parseAndValidateRecipesJson, tryParseRecipesFromFreeform, type RecipeCandidate } from "@/lib/llm/schema";
 
 const SYSTEM_PROMPT = [
   "You are a recipe generator.",
@@ -27,6 +27,40 @@ export type GenerateRecipesFailure = {
 };
 
 export type GenerateRecipesResult = GenerateRecipesSuccess | GenerateRecipesFailure;
+
+function getProviderErrorMessage(error: unknown): string {
+  const fallback = "Failed to call LLM provider.";
+
+  if (!error || typeof error !== "object") {
+    return fallback;
+  }
+
+  const status = "status" in error && typeof (error as { status?: unknown }).status === "number"
+    ? (error as { status: number }).status
+    : undefined;
+  const message =
+    "message" in error && typeof (error as { message?: unknown }).message === "string"
+      ? (error as { message: string }).message
+      : "";
+
+  if (status === 401) {
+    return "LLM authentication failed (401). Check LLM_API_KEY and provider token permissions.";
+  }
+
+  if (status === 403) {
+    return "LLM access denied (403). Verify token scope and model access.";
+  }
+
+  if (status === 404) {
+    return "LLM model/provider endpoint not found (404). Check LLM_MODEL and LLM_BASE_URL.";
+  }
+
+  if (status) {
+    return `LLM provider request failed (${status})${message ? `: ${message}` : "."}`;
+  }
+
+  return message || fallback;
+}
 
 function getContentText(content: unknown): string {
   if (!content) {
@@ -55,8 +89,7 @@ async function requestRawRecipes(
   client: OpenAI,
   prompt: string
 ): Promise<string> {
-  const completion = await client.chat.completions.create({
-    model: getLlmModel(),
+  const { completion } = await createChatCompletionWithFallback(client, {
     temperature: 0.2,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -104,6 +137,12 @@ export async function generateRecipesWithClient(
         const parsedFixed = parseAndValidateRecipesJson(raw);
         return { ok: true, recipes: parsedFixed.recipes, raw };
       } catch {
+        const salvaged = tryParseRecipesFromFreeform(raw);
+        if (salvaged) {
+          console.warn("LLM returned freeform output; salvaged recipes from text blocks.");
+          return { ok: true, recipes: salvaged.recipes, raw };
+        }
+
         console.error("LLM parse failure after retry", { raw });
         return {
           ok: false,
@@ -119,7 +158,7 @@ export async function generateRecipesWithClient(
     console.error("LLM request failed", error);
     return {
       ok: false,
-      error: { code: "LLM_REQUEST_FAILED", message: "Failed to call LLM provider." },
+      error: { code: "LLM_REQUEST_FAILED", message: getProviderErrorMessage(error) },
       raw
     };
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listPantryItems } from "@/lib/db/pantry";
 import { generateRecipeRequestSchema } from "@/lib/domain/recipes";
+import { getLlmApiKey, getLlmBaseUrl, getLlmModel, smokeCheckLlmAuth } from "@/lib/llm/client";
 import { generateRecipes } from "@/lib/llm/generateRecipes";
 
 export async function POST(request: Request) {
@@ -13,6 +14,21 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const apiKey = getLlmApiKey();
+  const baseURL = getLlmBaseUrl();
+  const model = getLlmModel();
+  console.log("[LLM Config]", {
+    baseURL,
+    model,
+    tokenPrefix: apiKey.slice(0, 3),
+    tokenLength: apiKey.length
+  });
+
+  if (process.env.LLM_SMOKE_CHECK === "true") {
+    const smokeStatus = await smokeCheckLlmAuth();
+    console.log("[LLM SmokeCheck]", { url: `${baseURL}/models`, status: smokeStatus });
   }
 
   const pantryItems = await listPantryItems();

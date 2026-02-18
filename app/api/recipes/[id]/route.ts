@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRecipeById } from "@/lib/db/recipes";
+import { deleteRecipeById, getRecipeById } from "@/lib/db/recipes";
 
 export async function GET(
   _request: Request,
@@ -11,4 +11,16 @@ export async function GET(
   }
 
   return NextResponse.json({ recipe });
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: { id: string } }
+) {
+  try {
+    await deleteRecipeById(context.params.id);
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+  }
 }
