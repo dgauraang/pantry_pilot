@@ -54,32 +54,39 @@ export default function RecipesPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Saved Recipes</h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">Saved Recipes</h1>
+        <p className="text-sm text-slate-600">Browse your generated recipes and remove outdated ones.</p>
+      </div>
 
-      {loading ? <p className="text-sm text-slate-600">Loading recipes...</p> : null}
+      {loading ? (
+        <div className="card border-dashed">
+          <p className="text-sm text-slate-600">Loading recipes...</p>
+        </div>
+      ) : null}
       {error ? <p className="rounded-md bg-red-100 p-3 text-red-700">{error}</p> : null}
 
       <ul className="space-y-2">
         {recipes.map((recipe) => (
-          <li className="flex items-center justify-between gap-3 rounded-lg bg-white p-4 shadow-sm" key={recipe.id}>
+          <li className="card flex items-center justify-between gap-3" key={recipe.id}>
             <div>
-              <Link className="font-medium text-brand-700" href={`/recipes/${recipe.id}`}>
+              <Link className="font-medium text-brand-700 hover:underline" href={`/recipes/${recipe.id}`}>
                 {recipe.title}
               </Link>
               <p className="text-sm text-slate-600">{new Date(recipe.createdAt).toLocaleString()}</p>
             </div>
-            <button
-              className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700"
-              onClick={() => deleteRecipe(recipe.id)}
-              type="button"
-            >
+            <button className="btn-danger" onClick={() => deleteRecipe(recipe.id)} type="button">
               Delete
             </button>
           </li>
         ))}
       </ul>
 
-      {!loading && recipes.length === 0 ? <p className="text-sm text-slate-600">No saved recipes yet.</p> : null}
+      {!loading && recipes.length === 0 ? (
+        <div className="card border-dashed">
+          <p className="text-sm text-slate-600">No saved recipes yet.</p>
+        </div>
+      ) : null}
     </section>
   );
 }

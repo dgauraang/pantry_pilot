@@ -20,6 +20,10 @@ export function getLlmApiKey() {
   return apiKey;
 }
 
+export function hasLlmApiKey() {
+  return normalizeApiKey(process.env.LLM_API_KEY).length > 0;
+}
+
 export function getLlmBaseUrl() {
   return (process.env.LLM_BASE_URL || DEFAULT_BASE_URL).trim();
 }

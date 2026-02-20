@@ -1,6 +1,9 @@
 services:
   app-dev:
-    image: node:20-bookworm-slim
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
     working_dir: /app
     volumes:
       - ./:/app
@@ -16,7 +19,8 @@ services:
       - LLM_HTTP_REFERER=${LLM_HTTP_REFERER:-http://localhost:3000}
       - LLM_X_TITLE=${LLM_X_TITLE:-PantryPilot}
       - CHOKIDAR_USEPOLLING=true
-    command: sh -c "apt-get update && apt-get install -y openssl && npm install && ./scripts/start.sh dev"
+      - NEXT_IGNORE_INCORRECT_LOCKFILE=1
+    command: sh -c "if [ ! -d /app/node_modules/@prisma/client ]; then npm install; fi && ./scripts/start.sh dev"
     ports:
       - "3000:3000"
 
@@ -52,7 +56,7 @@ services:
       - LLM_BASE_URL=http://example.invalid/v1
       - LLM_MODEL=test-model
       - LLM_API_KEY=test-token
-    command: sh -c "apt-get update && apt-get install -y openssl && npm install && npm run db:prepare:dev && npm run test"
+    command: sh -c "apt-get update && apt-get install -y openssl poppler-utils && npm install && npm run db:prepare:dev && npm run test"
 
   e2e:
     image: mcr.microsoft.com/playwright:v1.51.0-noble

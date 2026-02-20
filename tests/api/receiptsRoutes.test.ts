@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const createReceiptWithItems = vi.fn();
-const extractReceiptTextFromImage = vi.fn();
+const extractReceiptText = vi.fn();
 const extractReceiptItemsWithLlm = vi.fn();
 const applyReceiptItems = vi.fn();
 
@@ -16,7 +16,7 @@ vi.mock("@/lib/db/receipts", () => ({
 }));
 
 vi.mock("@/lib/ocr/receiptOcr", () => ({
-  extractReceiptTextFromImage
+  extractReceiptText
 }));
 
 vi.mock("@/lib/llm/receiptExtraction", () => ({
@@ -49,7 +49,7 @@ describe("POST /api/receipts", () => {
   });
 
   it("parses OCR rows and persists receipt", async () => {
-    extractReceiptTextFromImage.mockResolvedValue({
+    extractReceiptText.mockResolvedValue({
       text: "2 x 400g Tomatoes",
       confidence: 0.9,
       provider: "tesseract"
@@ -71,7 +71,7 @@ describe("POST /api/receipts", () => {
   });
 
   it("falls back to LLM extraction when OCR quality is low", async () => {
-    extractReceiptTextFromImage.mockResolvedValue({
+    extractReceiptText.mockResolvedValue({
       text: "",
       confidence: 0.1,
       provider: "none"
@@ -98,6 +98,26 @@ describe("POST /api/receipts", () => {
 
     expect(response.status).toBe(201);
     expect(extractReceiptItemsWithLlm).toHaveBeenCalledOnce();
+  });
+
+  it("accepts PDF receipts", async () => {
+    extractReceiptText.mockResolvedValue({
+      text: "BANANAS 2 lb",
+      confidence: 0.82,
+      provider: "pdftotext"
+    });
+
+    const formData = new FormData();
+    formData.append("file", new File(["%PDF-1.7"], "receipt.pdf", { type: "application/pdf" }));
+    const request = new Request("http://localhost/api/receipts", {
+      method: "POST",
+      body: formData
+    });
+
+    const response = await postReceipt(request);
+
+    expect(response.status).toBe(201);
+    expect(createReceiptWithItems).toHaveBeenCalledOnce();
   });
 });
 

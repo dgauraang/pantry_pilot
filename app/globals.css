@@ -7,5 +7,103 @@
 }
 
 body {
+  font-family: var(--font-sans), "Avenir Next", "Segoe UI", sans-serif;
   @apply bg-slate-100 text-slate-900;
+}
+
+h1,
+h2,
+h3,
+.brand-mark {
+  font-family: var(--font-display), "Trebuchet MS", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.bg-orb {
+  position: fixed;
+  z-index: 0;
+  border-radius: 9999px;
+  filter: blur(40px);
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.bg-orb-left {
+  width: 26rem;
+  height: 26rem;
+  left: -10rem;
+  top: -6rem;
+  background: radial-gradient(circle, #86efac 0%, #34d399 38%, transparent 70%);
+}
+
+.bg-orb-right {
+  width: 22rem;
+  height: 22rem;
+  right: -8rem;
+  top: 12rem;
+  background: radial-gradient(circle, #99f6e4 0%, #6ee7b7 38%, transparent 70%);
+}
+
+@layer components {
+  .page-shell {
+    @apply rounded-2xl border border-white/80 bg-white/70 p-4 shadow-xl shadow-slate-300/20 backdrop-blur-md sm:p-6;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200/90 bg-white p-4 shadow-md shadow-slate-200/70 transition-transform duration-200;
+    animation: rise-in 420ms ease both;
+  }
+
+  .section-title {
+    @apply text-xl font-semibold text-slate-900;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-600/90;
+  }
+
+  .input {
+    @apply rounded-xl border border-slate-300/80 bg-white/90 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15;
+  }
+
+  .btn-primary {
+    @apply rounded-xl bg-gradient-to-r from-brand-700 to-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand-700/20 transition hover:-translate-y-px hover:from-brand-800 hover:to-brand-600 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply rounded-xl border border-slate-300/90 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50;
+  }
+
+  .btn-danger {
+    @apply rounded-xl border border-red-300 bg-white px-3 py-1 text-sm text-red-700 shadow-sm transition-colors hover:bg-red-50;
+  }
+
+  .nav-chip {
+    @apply rounded-xl px-4 py-2 text-sm font-semibold transition;
+  }
+
+  .nav-chip-active {
+    @apply bg-white/20 text-white ring-1 ring-white/40 backdrop-blur-sm;
+  }
+
+  .nav-chip-idle {
+    @apply bg-white text-slate-700 hover:bg-emerald-50;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
 }

@@ -13,13 +13,13 @@ export function Nav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-3">
+    <nav className="flex flex-wrap gap-2 rounded-2xl bg-emerald-950/20 p-1.5 ring-1 ring-white/20">
       {links.map((link) => {
         const active = pathname.startsWith(link.href);
         return (
           <Link
-            className={`rounded-md px-3 py-2 text-sm font-medium ${
-              active ? "bg-brand-700 text-white" : "bg-white text-slate-700"
+            className={`nav-chip ${
+              active ? "nav-chip-active" : "nav-chip-idle"
             }`}
             href={link.href}
             key={link.href}

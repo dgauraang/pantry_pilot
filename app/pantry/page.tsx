@@ -85,7 +85,7 @@ export default function PantryPage() {
     setReceiptSuccess(null);
 
     if (!uploadFile) {
-      setReceiptError("Select an image file first.");
+      setReceiptError("Select a receipt file first.");
       return;
     }
 
@@ -184,57 +184,58 @@ export default function PantryPage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Pantry Items</h1>
-        <button
-          className="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white"
-          onClick={seedSample}
-          type="button"
-        >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">Pantry Items</h1>
+          <p className="text-sm text-slate-600">Track ingredients and keep your pantry inventory current.</p>
+        </div>
+        <button className="btn-secondary" onClick={seedSample} type="button">
           Seed Sample Pantry
         </button>
       </div>
 
-      <form className="grid gap-3 rounded-xl bg-white p-4 shadow-sm sm:grid-cols-4" onSubmit={handleSubmit}>
+      <form className="card grid gap-3 sm:grid-cols-4" onSubmit={handleSubmit}>
+        <div className="sm:col-span-4">
+          <h2 className="section-title">Add Ingredient</h2>
+          <p className="section-subtitle">Quickly add a pantry item with optional quantity details.</p>
+        </div>
         <input
-          className="rounded-md border border-slate-300 px-3 py-2"
+          className="input"
           onChange={(event) => setName(event.target.value)}
           placeholder="Name"
           required
           value={name}
         />
         <input
-          className="rounded-md border border-slate-300 px-3 py-2"
+          className="input"
           onChange={(event) => setQuantity(event.target.value)}
           placeholder="Quantity"
           value={quantity}
         />
         <input
-          className="rounded-md border border-slate-300 px-3 py-2"
+          className="input"
           onChange={(event) => setUnit(event.target.value)}
           placeholder="Unit"
           value={unit}
         />
-        <button className="rounded-md bg-brand-500 px-4 py-2 font-medium text-white" type="submit">
+        <button className="btn-primary" type="submit">
           Add
         </button>
       </form>
 
-      <form className="space-y-3 rounded-xl bg-white p-4 shadow-sm" onSubmit={handleReceiptUpload}>
-        <h2 className="text-lg font-semibold">Import Receipt Image</h2>
-        <p className="text-sm text-slate-600">Supported: jpg, jpeg, png, webp (single image, max 8MB).</p>
+      <form className="card space-y-3" onSubmit={handleReceiptUpload}>
+        <div className="space-y-1">
+          <h2 className="section-title">Import Receipt File</h2>
+          <p className="section-subtitle">Supported: jpg, jpeg, png, webp, pdf (single file, max 8MB).</p>
+        </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+            className="input"
             onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
             type="file"
           />
-          <button
-            className="rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            disabled={uploading}
-            type="submit"
-          >
+          <button className="btn-primary" disabled={uploading} type="submit">
             {uploading ? "Uploading..." : "Upload Receipt"}
           </button>
         </div>
@@ -243,32 +244,35 @@ export default function PantryPage() {
       </form>
 
       {receiptRows.length > 0 ? (
-        <div className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
-          <h3 className="text-lg font-semibold">Review Parsed Items</h3>
-          <div className="overflow-auto">
+        <div className="card space-y-3">
+          <div className="space-y-1">
+            <h3 className="section-title">Review Parsed Items</h3>
+            <p className="section-subtitle">Confirm uncertain rows before applying them to pantry inventory.</p>
+          </div>
+          <div className="overflow-auto rounded-lg border border-slate-200">
             <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="p-2">Ingredient</th>
-                  <th className="p-2">Quantity</th>
-                  <th className="p-2">Unit</th>
-                  <th className="p-2">Confidence</th>
-                  <th className="p-2">Confirm</th>
+              <thead className="bg-slate-50">
+                <tr className="text-left text-slate-700">
+                  <th className="p-2 font-semibold">Ingredient</th>
+                  <th className="w-28 p-2 font-semibold">Quantity</th>
+                  <th className="w-28 p-2 font-semibold">Unit</th>
+                  <th className="w-24 p-2 font-semibold">Confidence</th>
+                  <th className="w-28 p-2 font-semibold">Confirm</th>
                 </tr>
               </thead>
               <tbody>
                 {receiptRows.map((row, index) => (
-                  <tr className="border-b align-top" key={`${row.rawLine}-${index}`}>
+                  <tr className="border-t border-slate-200 odd:bg-white even:bg-slate-50/40" key={`${row.rawLine}-${index}`}>
                     <td className="p-2">
                       <input
-                        className="w-full rounded-md border border-slate-300 px-2 py-1"
+                        className="input w-full"
                         onChange={(event) => updateReceiptRow(index, { name: event.target.value })}
                         value={row.name}
                       />
                     </td>
                     <td className="p-2">
                       <input
-                        className="w-24 rounded-md border border-slate-300 px-2 py-1"
+                        className="input w-24"
                         onChange={(event) =>
                           updateReceiptRow(index, {
                             quantityValue: event.target.value ? Number(event.target.value) : null
@@ -280,7 +284,7 @@ export default function PantryPage() {
                     </td>
                     <td className="p-2">
                       <input
-                        className="w-24 rounded-md border border-slate-300 px-2 py-1"
+                        className="input w-24"
                         onChange={(event) => updateReceiptRow(index, { unit: event.target.value || null })}
                         value={row.unit ?? ""}
                       />
@@ -303,36 +307,39 @@ export default function PantryPage() {
               </tbody>
             </table>
           </div>
-          <button
-            className="rounded-md bg-brand-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-            disabled={applying}
-            onClick={handleApplyReceipt}
-            type="button"
-          >
+          <button className="btn-primary" disabled={applying} onClick={handleApplyReceipt} type="button">
             {applying ? "Applying..." : "Apply to Pantry"}
           </button>
         </div>
       ) : null}
 
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li className="flex items-center justify-between rounded-lg bg-white p-4 shadow-sm" key={item.id}>
-            <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-slate-600">
-                {[item.quantity, item.unit].filter(Boolean).join(" ") || "No quantity"}
-              </p>
-            </div>
-            <button
-              className="rounded-md border border-red-300 px-3 py-1 text-sm text-red-700"
-              onClick={() => handleDelete(item.id)}
-              type="button"
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <h2 className="section-title">Current Pantry</h2>
+          <p className="section-subtitle">Your saved ingredients appear here.</p>
+        </div>
+        {items.length === 0 ? (
+          <div className="card border-dashed">
+            <p className="text-sm text-slate-600">No pantry items yet. Add one manually or import a receipt.</p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {items.map((item) => (
+              <li className="card flex items-center justify-between" key={item.id}>
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-sm text-slate-600">
+                    {[item.quantity, item.unit].filter(Boolean).join(" ") || "No quantity"}
+                  </p>
+                </div>
+                <button className="btn-danger" onClick={() => handleDelete(item.id)} type="button">
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

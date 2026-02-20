@@ -4,11 +4,12 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createReceiptWithItems } from "@/lib/db/receipts";
+import { hasLlmApiKey } from "@/lib/llm/client";
 import { extractReceiptItemsWithLlm } from "@/lib/llm/receiptExtraction";
-import { extractReceiptTextFromImage } from "@/lib/ocr/receiptOcr";
+import { extractReceiptText } from "@/lib/ocr/receiptOcr";
 import { LOW_CONFIDENCE_THRESHOLD, parseReceiptText } from "@/lib/receipts/parseLineItems";
 
-const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
 
 const parsedRowSchema = z.object({
@@ -32,30 +33,44 @@ export async function POST(request: Request) {
     .filter((entry): entry is File => entry instanceof File);
 
   if (files.length !== 1) {
-    return toJsonError("Provide exactly one image file in `file` field.", 400);
+    return toJsonError("Provide exactly one receipt file in `file` field.", 400);
   }
 
   const file = files[0];
   if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
-    return toJsonError("Only jpg/jpeg/png/webp images are supported.", 400);
+    return toJsonError("Only jpg/jpeg/png/webp images and PDF files are supported.", 400);
   }
 
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    return toJsonError(`Image exceeds max size of ${MAX_UPLOAD_SIZE_BYTES} bytes.`, 400);
+    return toJsonError(`File exceeds max size of ${MAX_UPLOAD_SIZE_BYTES} bytes.`, 400);
   }
 
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const ext =
+    file.type === "image/png"
+      ? "png"
+      : file.type === "image/webp"
+        ? "webp"
+        : file.type === "application/pdf"
+          ? "pdf"
+          : "jpg";
   const filename = `${Date.now()}-${randomUUID()}.${ext}`;
   const uploadDir = path.join(process.cwd(), "data", "uploads", "receipts");
   const absolutePath = path.join(uploadDir, filename);
   await mkdir(uploadDir, { recursive: true });
   await writeFile(absolutePath, Buffer.from(await file.arrayBuffer()));
 
-  const ocr = await extractReceiptTextFromImage(absolutePath);
+  const ocr = await extractReceiptText(absolutePath, file.type);
+  if (file.type === "application/pdf" && ocr.errorCode === "pdf_tool_missing") {
+    return toJsonError(
+      "PDF processing tools are missing on server. Install poppler-utils (pdftotext/pdftoppm) and retry.",
+      500
+    );
+  }
+
   let parsedRows = parseReceiptText(ocr.text);
 
   const needsLlmFallback = ocr.confidence < 0.55 || parsedRows.length === 0;
-  if (needsLlmFallback) {
+  if (needsLlmFallback && hasLlmApiKey()) {
     try {
       const llmItems = await extractReceiptItemsWithLlm(ocr.text);
       parsedRows = llmItems.map((item) => ({
