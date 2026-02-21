@@ -22,6 +22,24 @@ const parsedRowSchema = z.object({
   requiresConfirmation: z.boolean()
 });
 
+function shouldUseLlmFallback(
+  ocrConfidence: number,
+  parsedRows: Array<{ confidence: number; quantityValue: number | null }>
+) {
+  if (ocrConfidence < 0.55 || parsedRows.length === 0) {
+    return true;
+  }
+
+  if (parsedRows.length < 4) {
+    return false;
+  }
+
+  const lowConfidenceCount = parsedRows.filter((row) => row.confidence < LOW_CONFIDENCE_THRESHOLD).length;
+  const missingQuantityCount = parsedRows.filter((row) => row.quantityValue === null).length;
+
+  return lowConfidenceCount / parsedRows.length >= 0.75 || missingQuantityCount / parsedRows.length >= 0.85;
+}
+
 function toJsonError(message: string, status: number) {
   return NextResponse.json({ error: { message } }, { status });
 }
@@ -69,7 +87,7 @@ export async function POST(request: Request) {
 
   let parsedRows = parseReceiptText(ocr.text);
 
-  const needsLlmFallback = ocr.confidence < 0.55 || parsedRows.length === 0;
+  const needsLlmFallback = shouldUseLlmFallback(ocr.confidence, parsedRows);
   if (needsLlmFallback && hasLlmApiKey()) {
     try {
       const llmItems = await extractReceiptItemsWithLlm(ocr.text);

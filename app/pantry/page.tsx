@@ -18,6 +18,7 @@ type ReceiptRow = {
   confidence: number;
   requiresConfirmation: boolean;
   confirmed: boolean;
+  ignored: boolean;
 };
 
 export default function PantryPage() {
@@ -127,7 +128,8 @@ export default function PantryPage() {
       setReceiptRows(
         data.receipt.rows.map((row) => ({
           ...row,
-          confirmed: !row.requiresConfirmation
+          confirmed: !row.requiresConfirmation,
+          ignored: false
         }))
       );
     } catch {
@@ -157,7 +159,8 @@ export default function PantryPage() {
             unit: row.unit,
             rawLine: row.rawLine,
             confidence: row.confidence,
-            confirmed: row.confirmed
+            confirmed: row.confirmed,
+            ignored: row.ignored
           }))
         })
       });
@@ -258,11 +261,17 @@ export default function PantryPage() {
                   <th className="w-28 p-2 font-semibold">Unit</th>
                   <th className="w-24 p-2 font-semibold">Confidence</th>
                   <th className="w-28 p-2 font-semibold">Confirm</th>
+                  <th className="w-24 p-2 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {receiptRows.map((row, index) => (
-                  <tr className="border-t border-slate-200 odd:bg-white even:bg-slate-50/40" key={`${row.rawLine}-${index}`}>
+                  <tr
+                    className={`border-t border-slate-200 odd:bg-white even:bg-slate-50/40 ${
+                      row.ignored ? "opacity-60" : ""
+                    }`}
+                    key={`${row.rawLine}-${index}`}
+                  >
                     <td className="p-2">
                       <input
                         className="input w-full"
@@ -295,12 +304,22 @@ export default function PantryPage() {
                         <input
                           checked={row.confirmed}
                           onChange={(event) => updateReceiptRow(index, { confirmed: event.target.checked })}
+                          disabled={row.ignored}
                           type="checkbox"
                         />
                         <span className={row.requiresConfirmation ? "text-amber-700" : "text-slate-600"}>
                           {row.requiresConfirmation ? "Required" : "Optional"}
                         </span>
                       </label>
+                    </td>
+                    <td className="p-2">
+                      <button
+                        className="text-sm text-slate-700 underline underline-offset-2 hover:text-slate-900"
+                        onClick={() => updateReceiptRow(index, { ignored: !row.ignored })}
+                        type="button"
+                      >
+                        {row.ignored ? "Restore" : "Ignore"}
+                      </button>
                     </td>
                   </tr>
                 ))}

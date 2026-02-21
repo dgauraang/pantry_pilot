@@ -9,12 +9,13 @@ services:
       - ./:/app
       - app_dev_node_modules:/app/node_modules
       - ./data:/data
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
       - DATABASE_URL=sqlite:/data/pantrypilot.db
       - LLM_BASE_URL=https://openrouter.ai/api/v1
       - LLM_MODEL=openrouter/free
-      - LLM_API_KEY=${LLM_API_KEY}
       - LLM_FALLBACK_MODELS=${LLM_FALLBACK_MODELS:-openai/gpt-oss-20b:free,mistralai/mistral-small-3.1-24b-instruct:free,qwen/qwen3-coder:free}
       - LLM_HTTP_REFERER=${LLM_HTTP_REFERER:-http://localhost:3000}
       - LLM_X_TITLE=${LLM_X_TITLE:-PantryPilot}
@@ -31,12 +32,13 @@ services:
     working_dir: /app
     volumes:
       - ./data:/data
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - DATABASE_URL=sqlite:/data/pantrypilot.db
       - LLM_BASE_URL=${LLM_BASE_URL:-https://openrouter.ai/api/v1}
       - LLM_MODEL=${LLM_MODEL:-openrouter/free}
-      - LLM_API_KEY=${LLM_API_KEY}
       - LLM_FALLBACK_MODELS=${LLM_FALLBACK_MODELS:-openai/gpt-oss-20b:free,mistralai/mistral-small-3.1-24b-instruct:free,qwen/qwen3-coder:free}
       - LLM_HTTP_REFERER=${LLM_HTTP_REFERER:-http://localhost:3000}
       - LLM_X_TITLE=${LLM_X_TITLE:-PantryPilot}

@@ -4,6 +4,7 @@ const createReceiptWithItems = vi.fn();
 const extractReceiptText = vi.fn();
 const extractReceiptItemsWithLlm = vi.fn();
 const applyReceiptItems = vi.fn();
+const hasLlmApiKey = vi.fn();
 
 vi.mock("node:fs/promises", () => ({
   mkdir: vi.fn(async () => undefined),
@@ -23,12 +24,17 @@ vi.mock("@/lib/llm/receiptExtraction", () => ({
   extractReceiptItemsWithLlm
 }));
 
+vi.mock("@/lib/llm/client", () => ({
+  hasLlmApiKey
+}));
+
 import { POST as postReceipt } from "@/app/api/receipts/route";
 import { POST as applyReceipt } from "@/app/api/receipts/[id]/apply/route";
 
 describe("POST /api/receipts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    hasLlmApiKey.mockReturnValue(true);
     createReceiptWithItems.mockResolvedValue({
       id: "receipt-1",
       status: "pending",
@@ -100,6 +106,36 @@ describe("POST /api/receipts", () => {
     expect(extractReceiptItemsWithLlm).toHaveBeenCalledOnce();
   });
 
+  it("falls back to LLM extraction when parsed OCR rows are mostly low quality", async () => {
+    extractReceiptText.mockResolvedValue({
+      text: ["alpha", "beta", "gamma", "delta"].join("\n"),
+      confidence: 0.95,
+      provider: "tesseract"
+    });
+    extractReceiptItemsWithLlm.mockResolvedValue([
+      {
+        name: "Milk",
+        normalizedName: "milk",
+        quantityValue: 1,
+        unit: "l",
+        rawLine: "Milk 1L",
+        confidence: 0.85
+      }
+    ]);
+
+    const formData = new FormData();
+    formData.append("file", new File(["abc"], "receipt.png", { type: "image/png" }));
+    const request = new Request("http://localhost/api/receipts", {
+      method: "POST",
+      body: formData
+    });
+
+    const response = await postReceipt(request);
+
+    expect(response.status).toBe(201);
+    expect(extractReceiptItemsWithLlm).toHaveBeenCalledOnce();
+  });
+
   it("accepts PDF receipts", async () => {
     extractReceiptText.mockResolvedValue({
       text: "BANANAS 2 lb",
@@ -142,6 +178,24 @@ describe("POST /api/receipts/[id]/apply", () => {
     expect(response.status).toBe(200);
     expect(json.result.updated).toBe(2);
     expect(applyReceiptItems).toHaveBeenCalledOnce();
+  });
+
+  it("accepts ignored rows in apply payload", async () => {
+    const request = new Request("http://localhost/api/receipts/receipt-1/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: [{ name: "Header Noise", quantityValue: null, unit: null, confidence: 0.95, ignored: true }]
+      })
+    });
+
+    const response = await applyReceipt(request, { params: { id: "receipt-1" } });
+
+    expect(response.status).toBe(200);
+    expect(applyReceiptItems).toHaveBeenCalledWith(
+      "receipt-1",
+      expect.arrayContaining([expect.objectContaining({ ignored: true })])
+    );
   });
 
   it("returns 400 on invalid payload", async () => {

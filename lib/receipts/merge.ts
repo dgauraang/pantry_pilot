@@ -9,6 +9,7 @@ export type ApplyLineItem = {
   rawLine?: string;
   confidence?: number | null;
   confirmed?: boolean;
+  ignored?: boolean;
 };
 
 export type MergeDecision =
@@ -35,7 +36,7 @@ export type MergeDecision =
     }
   | {
       action: "skip";
-      reason: "unconfirmed" | "missing_name";
+      reason: "ignored" | "unconfirmed" | "missing_name";
     };
 
 export function toQuantityString(quantityValue?: number | null): string | null {
@@ -54,6 +55,10 @@ export function decideMergeForLine(
   const normalizedName = line.normalizedName || normalizeName(line.name);
   if (!normalizedName) {
     return { action: "skip", reason: "missing_name" };
+  }
+
+  if (line.ignored) {
+    return { action: "skip", reason: "ignored" };
   }
 
   if (line.confirmed === false && (line.confidence ?? 0) < lowConfidenceThreshold) {

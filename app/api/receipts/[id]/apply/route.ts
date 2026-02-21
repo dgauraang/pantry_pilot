@@ -12,7 +12,8 @@ const applyReceiptSchema = z.object({
         unit: z.string().trim().nullable().optional(),
         rawLine: z.string().trim().optional(),
         confidence: z.number().min(0).max(1).nullable().optional(),
-        confirmed: z.boolean().optional()
+        confirmed: z.boolean().optional(),
+        ignored: z.boolean().optional()
       })
     )
     .min(1)
@@ -38,7 +39,8 @@ export async function POST(
         unit: normalizeUnit(item.unit),
         rawLine: item.rawLine ?? item.name,
         confidence: item.confidence ?? null,
-        confirmed: item.confirmed ?? false
+        confirmed: item.confirmed ?? false,
+        ignored: item.ignored ?? false
       }))
     );
 
